@@ -11,7 +11,13 @@
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.3" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.3" />
     <PackageReference Include="coverlet.collector" Version="3.0.2" />
+    <PackageReference Include="SpecFlow" Version="4.0.31-beta" />
     <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.assert" Version="2.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mc2.CrudTest.Presentation\Shared\Mc2.CrudTest.Shared.csproj" />
   </ItemGroup>
 
 </Project>
