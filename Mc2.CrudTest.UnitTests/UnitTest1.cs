@@ -1,3 +1,4 @@
+using Mc2.CrudTest.Shared.Models;
 using Xunit;
 
 namespace Mc2.CrudTest.UnitTests;

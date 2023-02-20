@@ -1,89 +1,169 @@
-namespace Mc2.CrudTest.UnitTests.Domain.Customers;
-
-using System;
-using System.Collections.Generic;
-using Mc2.CrudTest.Domain.Customers;
+using FluentValidation;
+using Mc2.CrudTest.Shared.Models;
 using NSubstitute;
 using Xunit;
 
-namespace Mc2.CrudTest.UnitTests.Domain.Customers
+namespace Mc2.CrudTest.UnitTests.Domain.Customers;
+
+public class CustomerServiceTests
 {
-    public class CustomerServiceTests
+    private readonly ICustomerRepository _customerRepository;
+    private readonly CustomerService _customerService;
+
+    public CustomerServiceTests()
     {
-        [Fact]
-        public void CreateCustomer_ValidCustomer_CallsRepositoryAdd()
+        _customerRepository = NSubstitute.Substitute.For<ICustomerRepository>();
+        _customerService = new CustomerService(_customerRepository);
+    }
+
+    [Fact]
+    public void CreateCustomer_ValidData_ReturnsNewCustomer()
+    {
+        // Arrange
+        var newCustomer = new Customer
         {
-            // Arrange
-            var customerRepository = Substitute.For<ICustomerRepository>();
-            var customerService = new CustomerService(customerRepository);
-            var customer = new Customer("John", "Doe", new DateTime(1980, 1, 1), "+1234567890", "johndoe@example.com", "1234567890");
+            FirstName = "John",
+            LastName = "Doe",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            PhoneNumber = "+1234567890",
+            Email = "john.doe@example.com",
+            BankAccountNumber = "1234567890"
+        };
 
-            // Act
-            customerService.CreateCustomer(customer);
+        // Act
+        var result = _customerService.CreateCustomer(newCustomer);
 
-            // Assert
-            customerRepository.Received(1).Add(customer);
-        }
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(newCustomer.FirstName, result.Firstname);
+        Assert.Equal(newCustomer.LastName, result.Lastname);
+        Assert.Equal(newCustomer.DateOfBirth, result.DateOfBirth);
+        Assert.Equal(newCustomer.PhoneNumber, result.PhoneNumber);
+        Assert.Equal(newCustomer.Email, result.Email);
+        Assert.Equal(newCustomer.BankAccountNumber, result.BankAccountNumber);
+    }
 
-        [Fact]
-        public void CreateCustomer_NullCustomer_ThrowsArgumentNullException()
+    [Fact]
+    public void CreateCustomer_InvalidData_ThrowsValidationException()
+    {
+        // Arrange
+        var newCustomer = new Customer
         {
-            // Arrange
-            var customerRepository = Substitute.For<ICustomerRepository>();
-            var customerService = new CustomerService(customerRepository);
+            FirstName = "",
+            LastName = "",
+            DateOfBirth = new DateTime(1900, 1, 1),
+            PhoneNumber = "invalid phone number",
+            Email = "invalid email",
+            BankAccountNumber = "invalid bank account number"
+        };
 
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => customerService.CreateCustomer(null));
-        }
+        // Act and Assert
+        var ex = Assert.Throws<ValidationException>(() => _customerService.CreateCustomer(newCustomer));
+        Assert.Equal("Validation error occurred.", ex.Message);
+    }
 
-        [Fact]
-        public void GetCustomer_ExistingCustomerId_ReturnsCustomer()
+    [Fact]
+    public void GetCustomer_ExistingId_ReturnsCustomer()
+    {
+        // Arrange
+        var existingCustomer = new Customer
         {
-            // Arrange
-            var customerRepository = Substitute.For<ICustomerRepository>();
-            var customerService = new CustomerService(customerRepository);
-            var customer = new Customer("John", "Doe", new DateTime(1980, 1, 1), "+1234567890", "johndoe@example.com", "1234567890");
-            customerRepository.GetById(customer.Id).Returns(customer);
+            Id = 1,
+            FirstName = "John",
+            LastName = "Doe",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            PhoneNumber = "+1234567890",
+            Email = "john.doe@example.com",
+            BankAccountNumber = "1234567890"
+        };
+        _customerRepository.GetById(existingCustomer.Id).Returns(existingCustomer);
 
-            // Act
-            var result = customerService.GetCustomer(customer.Id);
+        // Act
+        var result = _customerService.GetCustomer(existingCustomer.Id);
 
-            // Assert
-            Assert.Equal(customer, result);
-        }
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(existingCustomer.Id, result.Id);
+        Assert.Equal(existingCustomer.FirstName, result.Firstname);
+        Assert.Equal(existingCustomer.LastName, result.Lastname);
+        Assert.Equal(existingCustomer.DateOfBirth, result.DateOfBirth);
+        Assert.Equal(existingCustomer.PhoneNumber, result.PhoneNumber);
+        Assert.Equal(existingCustomer.Email, result.Email);
+        Assert.Equal(existingCustomer.BankAccountNumber, result.BankAccountNumber);
+    }
 
-        [Fact]
-        public void GetCustomer_NonExistingCustomerId_ReturnsNull()
-        {
-            // Arrange
-            var customerRepository = Substitute.For<ICustomerRepository>();
-            var customerService = new CustomerService(customerRepository);
-            var customerId = Guid.NewGuid();
-            customerRepository.GetById(customerId).Returns((Customer)null);
+    [Fact]
+    public void GetCustomer_NonExistingId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var nonExistingId = 1;
+        _customerRepository.GetById(nonExistingId).Returns((Customer)null);
 
-            // Act
-            var result = customerService.GetCustomer(customerId);
+        // Act and Assert
+        var ex = Assert.Throws<NotFoundException>(() => _customerService.GetCustomer(nonExistingId));
+        Assert.Equal("Customer not found.", ex.Message);
+    }
 
-            // Assert
-            Assert.Null(result);
-        }
+    [Fact]
+    public void UpdateCustomer_ValidData_SuccessfullyUpdates()
+    {
+        // Arrange
+        var customerId = 1;
+        var customerToUpdate = new Customer { Id = customerId, FirstName = "John", LastName = "Doe", Age = 35 };
+        var updatedCustomer = new Customer { Id = customerId, FirstName = "Jane", LastName = "Doe", Age = 40 };
+        _customerRepository.GetById(customerId).Returns(customrToUpdate);
 
-        [Fact]
-        public void GetAllCustomers_ReturnsAllCustomers()
-        {
-            // Arrange
-            var customerRepository = Substitute.For<ICustomerRepository>();
-            var customerService = new CustomerService(customerRepository);
-            var customer1 = new Customer("John", "Doe", new DateTime(1980, 1, 1), "+1234567890", "johndoe@example.com", "1234567890");
-            var customer2 = new Customer("Jane", "Doe", new DateTime(1985, 1, 1), "+2345678901", "janedoe@example.com", "2345678901");
-            var customers = new List<Customer> { customer1, customer2 };
-            customerRepository.GetAll().Returns(customers);
+        // Act
+        var result = _customerService.Update(updatedCustomer);
 
-            // Act
-            var result = customerService.GetAllCustomers();
+        // Assert
+        Assert.True(result);
+        _customerRepository.Received(1).SaveChanges();
+    }
 
-            // Assert
-            Assert.Equal(customers, result);
-        }
+    [Fact]
+    public void UpdateCustomer_InvalidData_ReturnsFalse()
+    {
+        // Arrange
+        var customerId = 1;
+        var customerToUpdate = new Customer { Id = customerId, FirstName = "John", LastName = "Doe", Age = 35 };
+        var updatedCustomer = new Customer { Id = customerId, FirstName = "", LastName = "Doe", Age = 40 };
+        _customerRepository.GetById(customerId).Returns(customerToUpdate);
+
+
+        // Act
+        var result = _customerService.Update(updatedCustomer);
+
+        // Assert
+        Assert.False(result);
+        _customerRepository.DidNotReceive().SaveChanges();
+    }
+
+    [Fact]
+    public void DeleteCustomer_ExistingId_DeletesCustomer()
+    {
+        // Arrange
+        var customerId = Guid.NewGuid();
+        var customer = new Customer
+            { Id = customerId, FirstName = "John", LastName = "Doe", Email = "johndoe@example.com" };
+        _customerRepository.GetById(customerId).Returns(customer);
+
+        // Act
+        _customerService.DeleteCustomer(customerId);
+
+        // Assert
+        _customerRepository.Received(1).Delete(customer);
+    }
+
+    [Fact]
+    public void DeleteCustomer_NonExistingId_ThrowsNotFoundException()
+    {
+        // Arrange
+        var customerId = Guid.NewGuid();
+        _customerRepository.GetById(customerId).Returns((Customer)null);
+
+        // Act and Assert
+        Assert.Throws<NotFoundException>(() => _customerService.DeleteCustomer(customerId));
+        _customerRepository.DidNotReceive().Delete(Arg.Any<Customer>());
     }
 }
