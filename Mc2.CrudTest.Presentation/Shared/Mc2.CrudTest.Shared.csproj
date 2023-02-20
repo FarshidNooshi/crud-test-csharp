@@ -1,7 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.5.0" />
+    <PackageReference Include="Google.LibPhoneNumber" Version="1.0.0" />
+    <PackageReference Include="IbanNet" Version="5.8.0" />
+  </ItemGroup>
 
 </Project>
