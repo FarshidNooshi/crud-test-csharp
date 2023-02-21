@@ -4,7 +4,7 @@ namespace Mc2.CrudTest.Domain.Entities;
 
 public class Customer
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     [Required(ErrorMessage = "First name is required.")]
     public string FirstName { get; set; }
