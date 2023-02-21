@@ -1,5 +1,5 @@
 using FluentValidation;
-using Mc2.CrudTest.Shared.Models;
+using Mc2.CrudTest.Domain.Entities;
 using NSubstitute;
 using Xunit;
 

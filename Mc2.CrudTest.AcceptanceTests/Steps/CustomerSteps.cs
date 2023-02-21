@@ -13,7 +13,6 @@ public class CustomerManagementSteps
     private ApiResponse<Customer> _apiResponse;
     private readonly ApiHelper _apiHelper;
     private int _invalidCustomerId;
-    
 
 
     public CustomerManagementSteps()
@@ -27,7 +26,7 @@ public class CustomerManagementSteps
         _customer = table.CreateInstance<Customer>();
         _apiHelper.CreateCustomer(_customer);
     }
-    
+
     [Given(@"I have entered valid customer data")]
     public void GivenIHaveEnteredValidCustomerData()
     {
