@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
         <PackageReference Include="NSubstitute" Version="5.0.0" />
         <PackageReference Include="xunit" Version="2.4.2" />
@@ -23,7 +24,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Application\Mc2.CrudTest.Application\Mc2.CrudTest.Application.csproj" />
       <ProjectReference Include="..\Domain\Mc2.CrudTest.Domain\Mc2.CrudTest.Domain.csproj" />
+      <ProjectReference Include="..\Infrastructure\Mc2.CrudTest.Infrastructure\Mc2.CrudTest.Infrastructure.csproj" />
       <ProjectReference Include="..\Mc2.CrudTest.Presentation\Shared\Mc2.CrudTest.Shared.csproj" />
     </ItemGroup>
 

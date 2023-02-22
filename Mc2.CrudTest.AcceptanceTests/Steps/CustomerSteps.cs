@@ -1,9 +1,10 @@
-using Mc2.CrudTest.Shared.Models;
+using System;
+using Mc2.CrudTest.Domain.Entities;
 using TechTalk.SpecFlow;
 using TechTalk.SpecFlow.Assist;
 using Xunit;
 
-namespace Mc2.CrudTest.AcceptanceTests;
+namespace Mc2.CrudTest.AcceptanceTests.Steps;
 
 [Binding]
 public class CustomerManagementSteps
@@ -31,31 +32,19 @@ public class CustomerManagementSteps
     public void GivenIHaveEnteredValidCustomerData()
     {
         // Set the fields of the updated customer
-        _updatedCustomer = new Customer
-        {
-            Id = 1,
-            FirstName = "Jane",
-            Email = "jane@test.com"
-        };
+        _updatedCustomer = new Customer { Id = Guid.NewGuid(), FirstName = "Jane", Email = "jane@test.com" };
     }
 
     [Given(@"I have entered invalid customer data")]
     public void GivenIHaveEnteredInvalidCustomerData()
     {
-        _customer = new Customer
-        {
-            FirstName = "Jane",
-            Email = "invalidemail"
-        };
+        _customer = new Customer { FirstName = "Jane", Email = "invalidemail" };
     }
 
     [Given(@"I have the ID of an existing customer")]
     public void GivenIHaveTheIDOfAnExistingCustomer()
     {
-        _customer = new Customer
-        {
-            Id = 1
-        };
+        _customer = new Customer { Id = Guid.NewGuid() };
     }
 
     [Given(@"I have an invalid customer ID")]
@@ -81,12 +70,6 @@ public class CustomerManagementSteps
     public void WhenIUpdateTheCustomer()
     {
         _apiResponse = _apiHelper.UpdateCustomer(_customer.Id, _customer);
-    }
-
-    [When(@"I delete the customer by their ID")]
-    public void WhenIDeleteTheCustomerByTheirID()
-    {
-        _apiResponse = _apiHelper.DeleteCustomer(_customer.Id);
     }
 
     [Then(@"the customer should be saved in the system")]

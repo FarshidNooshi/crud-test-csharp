@@ -4,6 +4,7 @@ using AutoMapper;
 using FluentValidation;
 using Mc2.CrudTest.Application.Dtos;
 using Mc2.CrudTest.Domain.Entities;
+using Mc2.CrudTest.Domain.Exceptions;
 using Mc2.CrudTest.Domain.Repositories;
 using Mc2.CrudTest.Domain.Validators;
 
@@ -24,7 +25,7 @@ namespace Mc2.CrudTest.Application.Services
         {
             var customer = _mapper.Map<Customer>(customerDto);
             var validator = new CustomerValidator(_customerRepository);
-            validator.ValidateAndThrow(customer);
+            await validator.ValidateAndThrowAsync(customer);
             await _customerRepository.AddAsync(customer);
             return customer.Id;
         }
@@ -32,6 +33,10 @@ namespace Mc2.CrudTest.Application.Services
         public async Task<CustomerDto> GetCustomerById(Guid id)
         {
             var customer = await _customerRepository.GetByIdAsync(id);
+            if (customer == null)
+            {
+                throw new NotFoundException($"Customer not found.");
+            }
             return _mapper.Map<CustomerDto>(customer);
         }
 
@@ -40,11 +45,11 @@ namespace Mc2.CrudTest.Application.Services
             var customer = await _customerRepository.GetByIdAsync(customerDto.Id);
             if (customer == null)
             {
-                throw new ArgumentException($"Customer with id {customerDto.Id} not found.");
+                throw new NotFoundException($"Customer with id {customerDto.Id} not found.");
             }
             _mapper.Map(customerDto, customer);
             var validator = new CustomerValidator(_customerRepository);
-            validator.ValidateAndThrow(customer);
+            await validator.ValidateAndThrowAsync(customer);
             await _customerRepository.UpdateAsync(customer);
         }
 
@@ -53,7 +58,7 @@ namespace Mc2.CrudTest.Application.Services
             var customer = await _customerRepository.GetByIdAsync(id);
             if (customer == null)
             {
-                throw new ArgumentException($"Customer with id {id} not found.");
+                throw new NotFoundException($"Customer with id {id} not found.");
             }
             await _customerRepository.DeleteAsync(customer);
         }

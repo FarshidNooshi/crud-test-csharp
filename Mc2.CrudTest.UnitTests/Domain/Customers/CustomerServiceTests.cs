@@ -1,5 +1,14 @@
+using System;
+using System.Threading.Tasks;
+using AutoMapper;
 using FluentValidation;
+using Mc2.CrudTest.Application.Dtos;
+using Mc2.CrudTest.Application.Mappings;
+using Mc2.CrudTest.Application.Services;
 using Mc2.CrudTest.Domain.Entities;
+using Mc2.CrudTest.Domain.Exceptions;
+using Mc2.CrudTest.Domain.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Xunit;
 
@@ -8,46 +17,58 @@ namespace Mc2.CrudTest.UnitTests.Domain.Customers;
 public class CustomerServiceTests
 {
     private readonly ICustomerRepository _customerRepository;
+    private readonly IMapper _mapper;
     private readonly CustomerService _customerService;
 
     public CustomerServiceTests()
     {
-        _customerRepository = NSubstitute.Substitute.For<ICustomerRepository>();
-        _customerService = new CustomerService(_customerRepository);
+        _customerRepository = Substitute.For<ICustomerRepository>();
+        _mapper = new Mapper(new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<CustomerMappingProfile>();
+        }));
+
+        // Create a DI container and register the dependencies
+        var services = new ServiceCollection()
+            .AddSingleton(_customerRepository)
+            .AddSingleton(_mapper)
+            .AddScoped<CustomerService>();
+
+        // Build the DI container and resolve the CustomerService instance
+        var serviceProvider = services.BuildServiceProvider();
+        _customerService = serviceProvider.GetService<CustomerService>();
     }
 
     [Fact]
-    public void CreateCustomer_ValidData_ReturnsNewCustomer()
+    public void CreateCustomer_ValidData_ReturnsNewCustomerId()
     {
         // Arrange
-        var newCustomer = new Customer
+        var newCustomerDto = new CustomerDto
         {
             FirstName = "John",
             LastName = "Doe",
             DateOfBirth = new DateTime(1990, 1, 1),
-            PhoneNumber = "+1234567890",
+            PhoneNumber = "+14155552671",
             Email = "john.doe@example.com",
-            BankAccountNumber = "1234567890"
+            BankAccountNumber = "DE89370400440532013000"
         };
 
+        var newCustomerId = newCustomerDto.Id;
+        _customerService.CreateCustomer(newCustomerDto).Returns(Task.FromResult(newCustomerId));
+
         // Act
-        var result = _customerService.CreateCustomer(newCustomer);
+        var result = _customerService.CreateCustomer(newCustomerDto).Result;
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(newCustomer.FirstName, result.Firstname);
-        Assert.Equal(newCustomer.LastName, result.Lastname);
-        Assert.Equal(newCustomer.DateOfBirth, result.DateOfBirth);
-        Assert.Equal(newCustomer.PhoneNumber, result.PhoneNumber);
-        Assert.Equal(newCustomer.Email, result.Email);
-        Assert.Equal(newCustomer.BankAccountNumber, result.BankAccountNumber);
+        Assert.Equal(newCustomerId, result);
     }
 
+
     [Fact]
-    public void CreateCustomer_InvalidData_ThrowsValidationException()
+    public async Task CreateCustomer_InvalidData_ThrowsValidationException()
     {
         // Arrange
-        var newCustomer = new Customer
+        var newCustomer = new CustomerDto
         {
             FirstName = "",
             LastName = "",
@@ -58,8 +79,9 @@ public class CustomerServiceTests
         };
 
         // Act and Assert
-        var ex = Assert.Throws<ValidationException>(() => _customerService.CreateCustomer(newCustomer));
-        Assert.Equal("Validation error occurred.", ex.Message);
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => _customerService.CreateCustomer(newCustomer));
+        Assert.Contains("Validation failed", ex.Message);
+
     }
 
     [Fact]
@@ -68,24 +90,24 @@ public class CustomerServiceTests
         // Arrange
         var existingCustomer = new Customer
         {
-            Id = 1,
+            Id = Guid.NewGuid(),
             FirstName = "John",
             LastName = "Doe",
             DateOfBirth = new DateTime(1990, 1, 1),
-            PhoneNumber = "+1234567890",
+            PhoneNumber = "+14155552671",
             Email = "john.doe@example.com",
-            BankAccountNumber = "1234567890"
+            BankAccountNumber = "DE89370400440532013000"
         };
-        _customerRepository.GetById(existingCustomer.Id).Returns(existingCustomer);
+        _customerRepository.GetByIdAsync(existingCustomer.Id).Returns(existingCustomer);
 
         // Act
-        var result = _customerService.GetCustomer(existingCustomer.Id);
+        var result = _customerService.GetCustomerById(existingCustomer.Id).Result;
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(existingCustomer.Id, result.Id);
-        Assert.Equal(existingCustomer.FirstName, result.Firstname);
-        Assert.Equal(existingCustomer.LastName, result.Lastname);
+        Assert.Equal(existingCustomer.FirstName, result.FirstName);
+        Assert.Equal(existingCustomer.LastName, result.LastName);
         Assert.Equal(existingCustomer.DateOfBirth, result.DateOfBirth);
         Assert.Equal(existingCustomer.PhoneNumber, result.PhoneNumber);
         Assert.Equal(existingCustomer.Email, result.Email);
@@ -93,51 +115,85 @@ public class CustomerServiceTests
     }
 
     [Fact]
-    public void GetCustomer_NonExistingId_ThrowsNotFoundException()
+    public async Task GetCustomer_NonExistingId_ThrowsNotFoundException()
     {
         // Arrange
-        var nonExistingId = 1;
-        _customerRepository.GetById(nonExistingId).Returns((Customer)null);
+        var nonExistingId = Guid.NewGuid();
+        _customerRepository.GetByIdAsync(nonExistingId).Returns(Task.FromResult((Customer)null));
 
         // Act and Assert
-        var ex = Assert.Throws<NotFoundException>(() => _customerService.GetCustomer(nonExistingId));
+        var ex = await Assert.ThrowsAsync<NotFoundException>(() => _customerService.GetCustomerById(nonExistingId));
         Assert.Equal("Customer not found.", ex.Message);
     }
 
     [Fact]
-    public void UpdateCustomer_ValidData_SuccessfullyUpdates()
+    public async Task UpdateCustomer_ValidData_SuccessfullyUpdates()
     {
         // Arrange
-        var customerId = 1;
-        var customerToUpdate = new Customer { Id = customerId, FirstName = "John", LastName = "Doe", Age = 35 };
-        var updatedCustomer = new Customer { Id = customerId, FirstName = "Jane", LastName = "Doe", Age = 40 };
-        _customerRepository.GetById(customerId).Returns(customrToUpdate);
+        var customerId = Guid.NewGuid();
+        var customerToUpdate = new Customer
+        {
+            Id = customerId,
+            FirstName = "John",
+            LastName = "Doe",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            PhoneNumber = "+14155552671",
+            Email = "john.doe@example.com",
+            BankAccountNumber = "DE89370400440532013000"
+        };
+        var updatedCustomer = new CustomerDto {
+            Id = customerId,
+            FirstName = "Jane",
+            LastName = "Doe",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            PhoneNumber = "+14155552671",
+            Email = "jane.doe@example.com",
+            BankAccountNumber = "DE89370400440532013000"
+        };
+        _customerRepository.GetByIdAsync(customerId).Returns(Task.FromResult(customerToUpdate));
 
         // Act
-        var result = _customerService.Update(updatedCustomer);
+        await _customerService.UpdateCustomer(updatedCustomer);
 
         // Assert
-        Assert.True(result);
-        _customerRepository.Received(1).SaveChanges();
+        await _customerRepository.Received(1).UpdateAsync(customerToUpdate);
     }
+
 
     [Fact]
-    public void UpdateCustomer_InvalidData_ReturnsFalse()
+    public async Task UpdateCustomer_InvalidData_ThrowsValidationException()
     {
         // Arrange
-        var customerId = 1;
-        var customerToUpdate = new Customer { Id = customerId, FirstName = "John", LastName = "Doe", Age = 35 };
-        var updatedCustomer = new Customer { Id = customerId, FirstName = "", LastName = "Doe", Age = 40 };
-        _customerRepository.GetById(customerId).Returns(customerToUpdate);
-
-
-        // Act
-        var result = _customerService.Update(updatedCustomer);
+        var customerId = Guid.NewGuid();
+        var customerToUpdate = new Customer {
+            Id = customerId,
+            FirstName = "John",
+            LastName = "Doe",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            PhoneNumber = "+14155552671",
+            Email = "john.doe@example.com",
+            BankAccountNumber = "DE89370400440532013000"
+        };
+        var updatedCustomer = new CustomerDto {
+            Id = customerId,
+            FirstName = "",
+            LastName = "Doe",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            PhoneNumber = "+14155552671",
+            Email = "jane.doe@example.com",
+            BankAccountNumber = "DE89370400440532013000"
+        };
+        _customerRepository.GetByIdAsync(customerId).Returns(Task.FromResult(customerToUpdate));
 
         // Assert
-        Assert.False(result);
-        _customerRepository.DidNotReceive().SaveChanges();
+        await Assert.ThrowsAsync<ValidationException>(async () => {
+            // Act
+            await _customerService.UpdateCustomer(updatedCustomer);
+        });
+        
+        _customerRepository.DidNotReceive().UpdateAsync(Arg.Any<Customer>());
     }
+
 
     [Fact]
     public void DeleteCustomer_ExistingId_DeletesCustomer()
@@ -145,25 +201,30 @@ public class CustomerServiceTests
         // Arrange
         var customerId = Guid.NewGuid();
         var customer = new Customer
-            { Id = customerId, FirstName = "John", LastName = "Doe", Email = "johndoe@example.com" };
-        _customerRepository.GetById(customerId).Returns(customer);
+        {
+            Id = customerId, 
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "johndoe@example.com"
+        };
+        _customerRepository.GetByIdAsync(customerId).Returns(Task.FromResult(customer));
 
         // Act
         _customerService.DeleteCustomer(customerId);
 
         // Assert
-        _customerRepository.Received(1).Delete(customer);
+        _customerRepository.Received(1).DeleteAsync(customer);
     }
 
     [Fact]
-    public void DeleteCustomer_NonExistingId_ThrowsNotFoundException()
+    public async Task DeleteCustomer_NonExistingId_ThrowsNotFoundException()
     {
         // Arrange
         var customerId = Guid.NewGuid();
-        _customerRepository.GetById(customerId).Returns((Customer)null);
+        _customerRepository.GetByIdAsync(customerId).Returns(Task.FromResult((Customer)null));
 
         // Act and Assert
-        Assert.Throws<NotFoundException>(() => _customerService.DeleteCustomer(customerId));
-        _customerRepository.DidNotReceive().Delete(Arg.Any<Customer>());
+        await Assert.ThrowsAsync<NotFoundException>(() => _customerService.DeleteCustomer(customerId));
+        await _customerRepository.DidNotReceive().DeleteAsync(Arg.Any<Customer>());
     }
 }

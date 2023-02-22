@@ -1,8 +1,9 @@
 using FluentValidation;
 using Mc2.CrudTest.Application.Services;
+using Mc2.CrudTest.Domain.Entities;
 using Mc2.CrudTest.Domain.Repositories;
-using Mc2.CrudTest.Shared.Models;
-using Mc2.CrudTest.Shared.Validators;
+using Mc2.CrudTest.Domain.Validators;
+using Mc2.CrudTest.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -28,7 +29,7 @@ namespace Mc2.CrudTest.Presentation.Server
             services.AddControllersWithViews();
             services.AddRazorPages();
             services.AddTransient<IValidator<Customer>, CustomerValidator>();
-            // services.AddTransient<ICustomerRepository, CustomerRepository>();
+            services.AddTransient<ICustomerRepository, CustomerRepository>();
             services.AddTransient<ICustomerService, CustomerService>();
         }
 

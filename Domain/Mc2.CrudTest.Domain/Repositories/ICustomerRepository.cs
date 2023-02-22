@@ -9,4 +9,5 @@ public interface ICustomerRepository
     Task<Customer> GetByFullNameAndDateOfBirthAsync(string firstName, string lastName, DateTime dateOfBirth);
     Task UpdateAsync(Customer customer);
     Task DeleteAsync(Customer customer);
+    Task SaveChanges();
 }

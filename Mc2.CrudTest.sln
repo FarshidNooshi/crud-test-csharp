@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mc2.CrudTest.Application", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mc2.CrudTest.Domain", "Domain\Mc2.CrudTest.Domain\Mc2.CrudTest.Domain.csproj", "{E666A91E-5046-44B3-9E47-D5EE3408C19F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrudTest.Infrastructure", "Infrastructure\CrudTest.Infrastructure\CrudTest.Infrastructure.csproj", "{C3F79BBF-9A1D-4A2E-9F71-622B317A1543}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mc2.CrudTest.Infrastructure", "Infrastructure\Mc2.CrudTest.Infrastructure\Mc2.CrudTest.Infrastructure.csproj", "{C3F79BBF-9A1D-4A2E-9F71-622B317A1543}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
